@@ -1,0 +1,141 @@
+#include <dt-bindings/zmk/matrix_transform.h>
+#include <dt-bindings/led/led.h>
+
+/ {
+    chosen {
+        zmk,kscan            = &kscan0;
+        zmk,matrix_transform = &default_transform;
+        zmk,underglow        = &led_strip;
+        zephyr,display       = &oled;          /* ← NEW: point ZMK at the OLED */
+    };
+
+    /* Sensor definition for ZMK 3.0+ */
+    sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&encoder_0>;
+    };
+
+    default_transform: keymap_transform_0 {
+        compatible = "zmk,matrix-transform";
+        columns = <4>;
+        rows    = <4>;
+        map = <
+            RC(0,0) RC(0,1) RC(0,2) RC(0,3)
+            RC(1,0) RC(1,1) RC(1,2) RC(1,3)
+            RC(2,0) RC(2,1) RC(2,2) RC(2,3)
+            RC(3,0) RC(3,1) RC(3,2) RC(3,3)
+        >;
+    };
+
+    kscan0: kscan_0 {
+        compatible = "zmk,kscan-gpio-matrix";
+        diode-direction = "col2row";
+        row-gpios
+            = <&gpio0  5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio0 29 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio0 30 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio0 31 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            ;
+        col-gpios
+            = <&gpio0 22 GPIO_ACTIVE_HIGH>
+            , <&gpio0 19 GPIO_ACTIVE_HIGH>
+            , <&gpio0 21 GPIO_ACTIVE_HIGH>
+            , <&gpio0 23 GPIO_ACTIVE_HIGH>
+            ;
+    };
+
+    encoder_0: encoder_0 {
+        compatible = "alps,ec11";
+        a-gpios = <&gpio0 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        b-gpios = <&gpio1 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        steps = <80>;
+        status = "okay";
+    };
+};
+
+/* ── I2C for SSD1306 OLED ─────────────────────────────────────────────────
+ *  SDA → P0.28  (physical wire from OLED SDA)
+ *  SCL → P0.02  (physical wire from OLED SCL)
+ *  Both pins are free — no conflict with matrix, encoder, or SPI3/RGB
+ * ──────────────────────────────────────────────────────────────────────── */
+&pinctrl {
+    /* existing SPI3 pinctrl — unchanged */
+    spi3_default: spi3_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 0, 12)>;
+        };
+    };
+    spi3_sleep: spi3_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 0, 12)>;
+            low-power-enable;
+        };
+    };
+
+    /* NEW: I2C0 pinctrl for OLED */
+    i2c0_default: i2c0_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 28)>,   /* P0.28 → SDA */
+                    <NRF_PSEL(TWIM_SCL, 0, 2)>;     /* P0.02 → SCL */
+        };
+    };
+    i2c0_sleep: i2c0_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 28)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 2)>;
+            low-power-enable;
+        };
+    };
+};
+
+/* ── SPI3 RGB strip — unchanged ─────────────────────────────────────────── */
+&spi3 {
+    compatible = "nordic,nrf-spim";
+    status = "okay";
+    pinctrl-0 = <&spi3_default>;
+    pinctrl-1 = <&spi3_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    led_strip: ws2812@0 {
+        compatible = "worldsemi,ws2812-spi";
+        reg = <0>;
+        spi-max-frequency = <4000000>;
+        chain-length = <25>;
+        reset-delay = <80>;
+        spi-one-frame  = <0x70>;
+        spi-zero-frame = <0x40>;
+        color-mapping  = <LED_COLOR_ID_GREEN
+                          LED_COLOR_ID_RED
+                          LED_COLOR_ID_BLUE>;
+    };
+};
+
+/* ── I2C0 with SSD1306 OLED (128×32) ────────────────────────────────────── */
+&i2c0 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+    clock-frequency = <I2C_BITRATE_FAST>;   /* 400 kHz */
+
+    oled: ssd1306@3c {
+        compatible = "solomon,ssd1306fb";
+        reg = <0x3c>;               /* default I2C address; use 0x3d if SA0 pin is high */
+        width  = <128>;
+        height = <32>;
+
+        /* Timing / geometry for 128×32 panels */
+        segment-offset   = <0>;
+        page-offset      = <0>;
+        display-offset   = <0>;
+        multiplex-ratio  = <31>;    /* height − 1 */
+
+        /* COM wiring typical for 0.91" 128×32 modules */
+        segment-remap;              /* column 127 → SEG0 */
+        com-invdir;                 /* scan COM[N-1] → COM0 */
+        com-sequential;             /* sequential COM pin config (NOT alt) */
+
+        prechargep = <0x22>;        /* phase 1 = 2 DCLK, phase 2 = 2 DCLK */
+    };
+};
