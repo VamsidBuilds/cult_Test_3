@@ -6,10 +6,9 @@
         zmk,kscan            = &kscan0;
         zmk,matrix_transform = &default_transform;
         zmk,underglow        = &led_strip;
-        zephyr,display       = &oled;          /* ← NEW: point ZMK at the OLED */
+        zephyr,display       = &oled;
     };
 
-    /* Sensor definition for ZMK 3.0+ */
     sensors {
         compatible = "zmk,keymap-sensors";
         sensors = <&encoder_0>;
@@ -19,7 +18,7 @@
         compatible = "zmk,matrix-transform";
         columns = <4>;
         rows    = <4>;
-        map = <
+        map = 
             RC(0,0) RC(0,1) RC(0,2) RC(0,3)
             RC(1,0) RC(1,1) RC(1,2) RC(1,3)
             RC(2,0) RC(2,1) RC(2,2) RC(2,3)
@@ -53,13 +52,7 @@
     };
 };
 
-/* ── I2C for SSD1306 OLED ─────────────────────────────────────────────────
- *  SDA → P0.28  (physical wire from OLED SDA)
- *  SCL → P0.02  (physical wire from OLED SCL)
- *  Both pins are free — no conflict with matrix, encoder, or SPI3/RGB
- * ──────────────────────────────────────────────────────────────────────── */
 &pinctrl {
-    /* existing SPI3 pinctrl — unchanged */
     spi3_default: spi3_default {
         group1 {
             psels = <NRF_PSEL(SPIM_MOSI, 0, 12)>;
@@ -72,11 +65,10 @@
         };
     };
 
-    /* NEW: I2C0 pinctrl for OLED */
     i2c0_default: i2c0_default {
         group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 28)>,   /* P0.28 → SDA */
-                    <NRF_PSEL(TWIM_SCL, 0, 2)>;     /* P0.02 → SCL */
+            psels = <NRF_PSEL(TWIM_SDA, 0, 28)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 2)>;
         };
     };
     i2c0_sleep: i2c0_sleep {
@@ -88,7 +80,6 @@
     };
 };
 
-/* ── SPI3 RGB strip — unchanged ─────────────────────────────────────────── */
 &spi3 {
     compatible = "nordic,nrf-spim";
     status = "okay";
@@ -110,32 +101,31 @@
     };
 };
 
-/* ── I2C0 with SSD1306 OLED (128×32) ────────────────────────────────────── */
+/* ── I2C0 with SSD1306 OLED (128×64) ────────────────────────────────────── */
 &i2c0 {
     compatible = "nordic,nrf-twim";
     status = "okay";
     pinctrl-0 = <&i2c0_default>;
     pinctrl-1 = <&i2c0_sleep>;
     pinctrl-names = "default", "sleep";
-    clock-frequency = <I2C_BITRATE_FAST>;   /* 400 kHz */
+    clock-frequency = <I2C_BITRATE_FAST>;
 
     oled: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
-        reg = <0x3c>;               /* default I2C address; use 0x3d if SA0 pin is high */
+        reg = <0x3c>;
         width  = <128>;
-        height = <32>;
+        height = <64>;           /* ← was 32 */
 
-        /* Timing / geometry for 128×32 panels */
-        segment-offset   = <0>;
-        page-offset      = <0>;
-        display-offset   = <0>;
-        multiplex-ratio  = <31>;    /* height − 1 */
+        segment-offset  = <0>;
+        page-offset     = <0>;
+        display-offset  = <0>;
+        multiplex-ratio = <63>;  /* ← was 31, must be height−1 */
 
-        /* COM wiring typical for 0.91" 128×32 modules */
-        segment-remap;              /* column 127 → SEG0 */
-        com-invdir;                 /* scan COM[N-1] → COM0 */
-        com-sequential;             /* sequential COM pin config (NOT alt) */
+        segment-remap;
+        com-invdir;
+        com-sequential;
+        inversion-on;            /* ← was missing */
 
-        prechargep = <0x22>;        /* phase 1 = 2 DCLK, phase 2 = 2 DCLK */
+        prechargep = <0x22>;
     };
 };
