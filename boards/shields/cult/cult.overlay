@@ -106,21 +106,24 @@
     pinctrl-0 = <&i2c0_default>;
     pinctrl-1 = <&i2c0_sleep>;
     pinctrl-names = "default", "sleep";
-    clock-frequency = <I2C_BITRATE_FAST>;
+    clock-frequency = <I2C_BITRATE_STANDARD>;  /* Changed to 100kHz for OLED stability */
 
     oled: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
         reg = <0x3c>;
         width  = <128>;
-        height = <64>;
+        height = <32>;                           /* Fixed: was 64, now 32 */
         segment-offset  = <0>;
         page-offset     = <0>;
         display-offset  = <0>;
-        multiplex-ratio = <63>;
+        multiplex-ratio = <31>;                  /* Fixed: height - 1 */
         segment-remap;
         com-invdir;
         com-sequential;
-        inversion-on;
+        inversion-off;                           /* Changed: inversion-on to inversion-off */
         prechargep = <0x22>;
+        contrast = <0x7F>;                       /* Added: default contrast */
+        charge-pump = <0x14>;                    /* Added: enable internal charge pump */
+        vcomh = <0x20>;                          /* Added: VCOMH regulator level */
     };
 };
