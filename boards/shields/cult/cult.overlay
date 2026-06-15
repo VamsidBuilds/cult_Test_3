@@ -9,9 +9,10 @@
         zephyr,display       = &oled;
     };
 
-    sensors {
+    keymap_sensors: sensors {
         compatible = "zmk,keymap-sensors";
         sensors = <&encoder_0>;
+        triggers-per-rotation = <20>;
     };
 
     default_transform: keymap_transform_0 {
@@ -101,7 +102,6 @@
     };
 };
 
-/* ── I2C0 with SSD1306 OLED (128×64) ────────────────────────────────────── */
 &i2c0 {
     compatible = "nordic,nrf-twim";
     status = "okay";
@@ -114,18 +114,15 @@
         compatible = "solomon,ssd1306fb";
         reg = <0x3c>;
         width  = <128>;
-        height = <64>;           /* ← was 32 */
-
+        height = <64>;
         segment-offset  = <0>;
         page-offset     = <0>;
         display-offset  = <0>;
-        multiplex-ratio = <63>;  /* ← was 31, must be height−1 */
-
+        multiplex-ratio = <63>;
         segment-remap;
         com-invdir;
         com-sequential;
-        inversion-on;            /* ← was missing */
-
+        inversion-on;
         prechargep = <0x22>;
     };
 };
