@@ -12,7 +12,6 @@
     keymap_sensors: sensors {
         compatible = "zmk,keymap-sensors";
         sensors = <&encoder_0>;
-        triggers-per-rotation = <20>;
     };
 
     default_transform: keymap_transform_0 {
@@ -48,7 +47,6 @@
         compatible = "alps,ec11";
         a-gpios = <&gpio0 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         b-gpios = <&gpio1 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        steps = <80>;
         status = "okay";
     };
 };
