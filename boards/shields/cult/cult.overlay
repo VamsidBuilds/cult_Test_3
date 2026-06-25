@@ -115,7 +115,7 @@
         height = <32>;
         segment-offset = <0>;
         page-offset = <0>;
-        display-offset = <32>;   /* changed from 0 to 32 */
+        display-offset = <32>;
         multiplex-ratio = <31>;
         segment-remap;
         com-invdir;
