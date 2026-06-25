@@ -115,11 +115,12 @@
         height = <32>;
         segment-offset = <0>;
         page-offset = <0>;
-        display-offset = <0>;  /* Changed from 32 to 0 for 128x32 display */
+        display-offset = <0>;
         multiplex-ratio = <31>;
         segment-remap;
         com-invdir;
         com-sequential;
         prechargep = <0x22>;
+        ready-time-ms = <100>;  /* Added for stability */
     };
 };
